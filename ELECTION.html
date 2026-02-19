@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>ELECTION DE CP DE CLASSE</title>
+    <style>
+        :root {
+            --bleu-nuit: #1a237e;
+            --bleu-clair: #e8eaf6;
+            --rouge: #d32f2f;
+            --vert: #2e7d32;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            text-align: center;
+            min-height: 100vh;
+            background-color: #f0f4f8;
+            /* Configuration de l'image en arrière-plan */
+            background-image: url('up.PNG'); 
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            background-position: center;
+            background-size: 40%; /* Ajuste la taille du logo ici */
+            position: relative;
+        }
+
+        /* Ajout d'un voile blanc semi-transparent pour garder le texte lisible */
+        body::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(240, 244, 248, 0.85); 
+            z-index: -1;
+        }
+
+        #admin-login-bar {
+            background: var(--bleu-nuit);
+            padding: 10px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            color: white;
+        }
+
+        #admin-login-bar input { padding: 5px; border-radius: 4px; border: none; }
+
+        .page { display: none; padding: 20px; }
+        .active { display: block; }
+
+        .container {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        .card {
+            background: white;
+            border: 2px solid var(--bleu-nuit);
+            border-radius: 15px;
+            padding: 15px;
+            width: 230px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .photo-box {
+            width: 100%;
+            height: 180px;
+            background: var(--bleu-clair);
+            border-radius: 10px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px dashed var(--bleu-nuit);
+        }
+
+        .photo-box img { width: 100%; height: 100%; object-fit: cover; }
+
+        button { cursor: pointer; font-weight: bold; border-radius: 8px; border: none; transition: 0.3s; }
+
+        .btn-vote {
+            background: var(--bleu-nuit);
+            color: white;
+            padding: 12px;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .admin-box {
+            background: white;
+            border: 2px solid var(--rouge);
+            padding: 20px;
+            margin: 20px auto;
+            max-width: 900px;
+            border-radius: 15px;
+        }
+
+        .result-display {
+            background: var(--bleu-nuit);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .signature { position: fixed; bottom: 10px; right: 15px; font-weight: bold; color: var(--bleu-nuit); }
+    </style>
+</head>
+<body>
+
+    <div id="admin-login-bar">
+        <span>Accès Admin : </span>
+        <input type="password" id="pass-input" placeholder="Code">
+        <button onclick="checkLogin()" style="background: var(--vert); color: white; padding: 5px 15px;">Connexion</button>
+        <button id="logout-btn" onclick="logout()" style="display:none; background: var(--rouge); color:white; padding: 5px 15px;">Quitter Admin</button>
+    </div>
+
+    <div id="page-vote" class="page active">
+        <h1>ELECTION DE CP DE CLASSE</h1>
+        <div class="container" id="container-electeur"></div>
+        
+        <div id="proclamation-zone" class="result-display">
+            <h2>🏆 RÉSULTATS PROCLAMÉS</h2>
+            <div id="detail-scores"></div>
+            <h1 id="winner-name" style="color: #ffeb3b; font-size: 3rem;"></h1>
+        </div>
+    </div>
+
+    <div id="page-admin" class="page">
+        <h1 style="color: var(--rouge)">PANNEAU DE CONTRÔLE</h1>
+        <div class="admin-box">
+            <div class="container" id="container-admin"></div>
+            <hr style="margin: 20px 0;">
+            <button onclick="proclamer()" style="background: var(--vert); color: white; padding: 15px 25px;">📢 PROCLAMER</button>
+            <button onclick="reset()" style="background: var(--rouge); color: white; padding: 15px 25px; margin-left: 10px;">🔄 RESET</button>
+        </div>
+    </div>
+
+    <div class="signature">@KBG</div>
+
+    <script>
+        const MOT_DE_PASSE = "123sar456ent";
+        let candidats = [
+            { id: 0, nom: "Candidat 1", photo: "", votes: 0 },
+            { id: 1, nom: "Candidat 2", photo: "", votes: 0 },
+            { id: 2, nom: "Candidat 3", photo: "", votes: 0 }
+        ];
+
+        function checkLogin() {
+            if(document.getElementById('pass-input').value === MOT_DE_PASSE) {
+                document.getElementById('page-vote').classList.remove('active');
+                document.getElementById('page-admin').classList.add('active');
+                document.getElementById('logout-btn').style.display = "inline";
+                render();
+            } else { alert("Code Incorrect"); }
+        }
+
+        function logout() {
+            document.getElementById('page-admin').classList.remove('active');
+            document.getElementById('page-vote').classList.add('active');
+            document.getElementById('logout-btn').style.display = "none";
+            document.getElementById('pass-input').value = "";
+            render();
+        }
+
+        function render() {
+            const userCont = document.getElementById('container-electeur');
+            const adminCont = document.getElementById('container-admin');
+            userCont.innerHTML = ''; adminCont.innerHTML = '';
+
+            candidats.forEach(c => {
+                userCont.innerHTML += `
+                    <div class="card">
+                        <div class="photo-box">${c.photo ? `<img src="${c.photo}">` : 'Pas de photo'}</div>
+                        <h3>${c.nom}</h3>
+                        <button class="btn-vote" onclick="voter(${c.id})">Voter</button>
+                    </div>`;
+
+                adminCont.innerHTML += `
+                    <div class="card" style="border-color: var(--rouge);">
+                        <div class="photo-box">${c.photo ? `<img src="${c.photo}">` : 'Photo'}</div>
+                        <input type="text" value="${c.nom}" onchange="updateNom(${c.id}, this.value)" style="width: 80%; margin: 5px 0;">
+                        <input type="file" onchange="updateImg(${c.id}, event)" style="font-size: 10px;">
+                        <p>Votes : <strong>${c.votes}</strong></p>
+                    </div>`;
+            });
+        }
+
+        function voter(id) {
+            candidats[id].votes++;
+            alert("Vote pour " + candidats[id].nom + " enregistré !");
+            render();
+        }
+
+        function updateNom(id, v) { candidats[id].nom = v; render(); }
+
+        function updateImg(id, event) {
+            const reader = new FileReader();
+            reader.onload = function() {
+                candidats[id].photo = reader.result;
+                render();
+            };
+            reader.readAsDataURL(event.target.files[0]);
+        }
+
+        function proclamer() {
+            let detail = ""; let max = -1; let gagnant = "";
+            candidats.forEach(c => {
+                detail += `${c.nom} : ${c.votes} voix | `;
+                if(c.votes > max) { max = c.votes; gagnant = c.nom; }
+            });
+            document.getElementById('detail-scores').innerText = detail;
+            document.getElementById('winner-name').innerText = gagnant.toUpperCase();
+            document.getElementById('proclamation-zone').style.display = "block";
+            logout();
+        }
+
+        function reset() {
+            if(confirm("Effacer tous les votes ?")) {
+                candidats.forEach(c => c.votes = 0);
+                document.getElementById('proclamation-zone').style.display = "none";
+                render();
+            }
+        }
+        render();
+    </script>
+</body>
+</html>
